@@ -28,13 +28,13 @@ FLUSH PRIVILEGES;
 
 
 
-DUMP structure and data
+/*DUMP structure and data*/
 mysqldump -u USER -p DATABASE | gzip > /path/to/`date +dump.%Y%m%d.%H%M%S.sql.gz`
 
 
 DROP DATABASE DATABASE;
 
 
-RESTORE
+/*RESTORE*/
 gunzip --keep dump.20190820.184703.sql.gz
 mysql -u USER -p DATABASE < /path/to/dump.20190820.184703.sql
