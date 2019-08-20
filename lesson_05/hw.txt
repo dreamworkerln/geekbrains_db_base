@@ -1,0 +1,103 @@
+
+===================================================
+Транзакции
+===================================================
+Резервирование тапок в онлайн-магазине
+===================================================
+
+
+
+DROP TABLE IF EXISTS `thing`;
+CREATE TABLE `thing` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(45) COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name_UNIQUE` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+DROP TABLE IF EXISTS `store`;
+CREATE TABLE `store` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `thing_id` bigint(20) unsigned DEFAULT NULL,
+  `count` int(11) DEFAULT NULL,
+  `reserved` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `fk_store_1_idx` (`thing_id`),
+  CONSTRAINT `fk_store_1` FOREIGN KEY (`thing_id`) REFERENCES `thing` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data
+--
+
+LOCK TABLES `thing` WRITE;
+INSERT INTO `thing` VALUES (1,'тапки');
+UNLOCK TABLES;
+
+LOCK TABLES `store` WRITE;
+INSERT INTO `store` VALUES (1,1,100,0);
+UNLOCK TABLES;
+
+
+
+
+
+/* Открываем две консоли */
+
+/* 1 консоль - будем бронировать 10 тапок*/
+BEGIN;
+
+mysql> SELECT * FROM store WHERE id=1 FOR UPDATE;
++----+----------+-------+----------+
+| id | thing_id | count | reserved |
++----+----------+-------+----------+
+|  1 | 1        |   100 |        0 |
++----+----------+-------+----------+
+1 row in set (0.00 sec)
+
+
+/* 2 консоль */
+
+BEGIN;
+
+mysql> SELECT * FROM store WHERE id=1 FOR UPDATE;
+
+/* тут 2 клиент будет ждать окончания транзакции первого клиента
+   или запрос упадет по таймауту */
+
+
+
+
+
+
+/* 1 консоль - резервируем тапки, у нас сейчас монопольный доступ к кортежу с id=1 
+   проверяем, что тапок достаточно (>=10), далее резервируем
+*/
+
+mysql> UPDATE `store` SET `count` = `count`- 10, reserved = reserved + 10 WHERE id = 1;
+Query OK, 1 row affected (0.03 sec)
+Rows matched: 1  Changed: 1  Warnings: 0
+
+/* 1 консоль - при этом второго клиента отпускает*/
+mysql> COMMIT;
+
+
+/* 2 консоль */
++----+----------+-------+----------+
+| id | thing_id | count | reserved |
++----+----------+-------+----------+
+|  1 | 1        |    90 |       10 |
++----+----------+-------+----------+
+1 row in set (26.43 sec) /* <- 26 сек набирал код в консоли*/
+
+
+/* 2 консоль - резервируем тапки, у нас сейчас монопольный доступ к кортежу с id=1 
+   проверяем, что тапок достаточно (>=10), далее резервируем
+*/
+
+...
+
+/* Таким образом, кто первый зарезервировал, того и тапки */
+/* upgrades: ID продавца, производившего резервирование, время протухания брони товара
+   (mysql scheduler, который после протуханя возвращает протухшую бронь обратно на склад) и т.д. */
