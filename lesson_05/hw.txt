@@ -105,6 +105,8 @@ mysql> COMMIT;
 /* EXPLAIN */
 /* ================================================================================================== */
 
+(с ~работы)
+
 EXPLAIN SELECT `channel`.`name` AS name, `channel`.display_name AS display_name, `channel`.`is_ottfree`, 
                `playlist_channel`.`button`  FROM `channel`  
         LEFT JOIN `playlist_channel` ON `playlist_channel`.channel_id = `channel`.id  
