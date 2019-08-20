@@ -68,9 +68,6 @@ mysql> SELECT * FROM store WHERE id=1 FOR UPDATE;
 
 
 
-
-
-
 /* 1 консоль - резервируем тапки, у нас сейчас монопольный доступ к кортежу с id=1 
    проверяем, что тапок достаточно (>=10), далее резервируем
 */
@@ -101,3 +98,74 @@ mysql> COMMIT;
 /* Таким образом, кто первый зарезервировал, того и тапки */
 /* upgrades: ID продавца, производившего резервирование, время протухания брони товара
    (mysql scheduler, который после протуханя возвращает протухшую бронь обратно на склад) и т.д. */
+
+
+
+/* ================================================================================================== */
+/* EXPLAIN */
+/* ================================================================================================== */
+
+EXPLAIN SELECT `channel`.`name` AS name, `channel`.display_name AS display_name, `channel`.`is_ottfree`, 
+               `playlist_channel`.`button`  FROM `channel`  
+        LEFT JOIN `playlist_channel` ON `playlist_channel`.channel_id = `channel`.id  
+        LEFT JOIN `playlist` ON `playlist_channel`.playlist_id = `playlist`.id  
+        LEFT JOIN `operator` ON `playlist`.`operator_id` = `operator`.`id`  
+        WHERE `playlist`.`name` = 'playlist' AND `operator`.`name` = 'my_operator' ORDER BY `button`\G
+
+*************************** 1. row ***************************
+           id: 1
+  select_type: SIMPLE
+        table: operator
+   partitions: NULL
+         type: const
+possible_keys: PRIMARY,name_UNIQUE
+          key: name_UNIQUE
+      key_len: 1022
+          ref: const
+         rows: 1
+     filtered: 100.00
+        Extra: Using index; Using filesort
+*************************** 2. row ***************************
+           id: 1
+  select_type: SIMPLE
+        table: playlist
+   partitions: NULL
+         type: const
+possible_keys: PRIMARY,unique_playlist_operator_id_name,index_playlist_operator_id_idx
+          key: unique_playlist_operator_id_name
+      key_len: 265
+          ref: const,const
+         rows: 1
+     filtered: 100.00
+        Extra: Using index
+*************************** 3. row ***************************
+           id: 1
+  select_type: SIMPLE
+        table: playlist_channel
+   partitions: NULL
+         type: ref
+possible_keys: PRIMARY,index_playlist_channel_playlist_id,index_playlist_channel_channel_id
+          key: PRIMARY
+      key_len: 8
+          ref: const
+         rows: 62
+     filtered: 100.00
+        Extra: Using where
+*************************** 4. row ***************************
+           id: 1
+  select_type: SIMPLE
+        table: channel
+   partitions: NULL
+         type: eq_ref
+possible_keys: PRIMARY
+          key: PRIMARY
+      key_len: 8
+          ref: iptv.playlist_channel.channel_id
+         rows: 1
+     filtered: 100.00
+        Extra: NULL
+4 rows in set, 1 warning (0.00 sec)
+
+
+
+Вроде норм, везде используются индексы.
