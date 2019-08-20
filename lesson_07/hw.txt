@@ -1,0 +1,37 @@
+(~ copy-paste с работы)
+/* 
+   Create schema
+   https://laravel.com/docs/5.8/migrations
+*/
+
+/** root */
+CREATE USER 'root'@'10.10.11.%' IDENTIFIED BY 'admin_password';         /*vlan 1010 */
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'10.10.11.%'   WITH GRANT OPTION;
+
+
+CREATE USER 'iptv'@'10.10.11.%' IDENTIFIED BY 'bla-bla-bla';
+
+/* ALL */
+GRANT ALL PRIVILEGES ON `iptv`.`exuser` TO 'iptv'@'10.10.11.%';
+GRANT ALL PRIVILEGES ON `iptv`.`operator` TO 'iptv'@'10.10.11.%';
+...
+
+
+/*READONLY*/
+GRANT SELECT ON `iptv`.`channel` TO 'iptv'@'10.10.11.%';
+GRANT SELECT ON `iptv`.`playlist` TO 'iptv'@'10.10.11.%';
+...
+
+FLUSH PRIVILEGES;
+
+// -------------------------------------------------------------------
+
+
+
+DUMP structure and data
+mysqldump -u USER -p DATABASE | gzip > /path/to/outputfile.sql.gz
+
+
+RESTORE
+gunzip --keep outputfile.sql.gz
+mysql -u USER -p DATABASE < /path/to/dump.sql
